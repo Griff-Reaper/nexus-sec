@@ -1,0 +1,19 @@
+# Core AI/LLM
+anthropic==0.43.1
+langchain==0.3.13
+langchain-anthropic==0.3.3
+langchain-community==0.3.13
+
+# CLI & UI
+typer==0.15.1
+rich==13.9.4
+
+# Environment & Config
+python-dotenv==1.0.1
+
+# Data handling
+pydantic>=2.0
+pydantic-settings>=2.0
+
+# Utilities
+requests==2.32.3
