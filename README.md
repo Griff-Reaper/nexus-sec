@@ -27,6 +27,10 @@ Uses tools:  Creates playbooks  Generates docs
 - **Autonomous Tool Use**: Agents intelligently select and use security tools
 - **MITRE ATT&CK Integration**: Maps threats to the MITRE ATT&CK framework
 - **Threat Intelligence**: Real-time indicator lookups (IPs, domains, hashes)
+  - Multi-source IOC enrichment (AbuseIPDB, AlienVault OTX, VirusTotal)
+  - Event correlation and incident detection
+  - Attack chain analysis (cyber kill chain mapping)
+  - Automated risk scoring and reporting
 - **Interactive CLI**: Beautiful terminal interface with agent communication visibility
 
 ## Current Agents
