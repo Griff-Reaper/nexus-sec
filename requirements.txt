@@ -1,19 +1,23 @@
-# Core AI/LLM
-anthropic==0.43.1
-langchain==0.3.13
-langchain-anthropic==0.3.3
-langchain-community==0.3.13
+# Nexus-Sec Requirements (Updated with new features)
 
-# CLI & UI
-typer==0.15.1
-rich==13.9.4
+# Core dependencies
+anthropic>=0.30.0
+python-dotenv>=1.0.0
+requests>=2.31.0
 
-# Environment & Config
-python-dotenv==1.0.1
+# SIEM Integration
+pyyaml>=6.0.1
 
-# Data handling
-pydantic>=2.0
-pydantic-settings>=2.0
+# Data processing (if you need it for other features)
+pandas>=2.0.0
+numpy>=1.24.0
 
-# Utilities
-requests==2.32.3
+# Optional: Logging
+python-json-logger>=2.0.7
+
+# Testing
+pytest>=7.4.0
+
+# Optional: Production SIEM clients
+# elasticsearch>=8.0.0  # For Elasticsearch integration
+# splunk-sdk>=1.7.0     # For Splunk integration

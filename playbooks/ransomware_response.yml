@@ -1,0 +1,96 @@
+name: ransomware_response
+description: Automated response to ransomware detection with rapid containment
+trigger:
+  event_type: ransomware_detected
+  severity: critical
+
+actions:
+  # PHASE 1: IMMEDIATE CONTAINMENT
+  - type: send_alert
+    name: emergency_alert
+    params:
+      severity: critical
+      message: "⚠️ RANSOMWARE DETECTED - Automated containment initiated"
+      channels: [email, slack, pagerduty]
+  
+  - type: isolate_host
+    name: isolate_infected_host
+    params:
+      hostname: ${hostname}
+    notes: "Immediate network isolation to prevent spread"
+  
+  # PHASE 2: BLOCK KNOWN C2 INFRASTRUCTURE
+  - type: block_ip
+    name: block_ransomware_c2
+    params:
+      ip: ${c2_ip_address}
+      duration: 86400  # 24 hours
+    condition: "c2_ip_address is not None"
+    notes: "Block command & control server"
+  
+  # PHASE 3: EVIDENCE COLLECTION
+  - type: collect_evidence
+    name: collect_forensics
+    params:
+      hostname: ${hostname}
+      artifacts: [memory, disk, registry, event_logs, network_connections]
+    continue_on_failure: true
+    notes: "Preserve evidence for investigation"
+  
+  # PHASE 4: QUARANTINE ALL ENCRYPTED FILES
+  - type: quarantine_file
+    name: quarantine_ransomware_binary
+    params:
+      file_path: ${ransomware_executable}
+      file_hash: ${file_hash}
+    condition: "ransomware_executable is not None"
+  
+  # PHASE 5: CREATE HIGH-PRIORITY INCIDENT
+  - type: create_ticket
+    name: create_ransomware_incident
+    params:
+      title: "CRITICAL: Ransomware Detection - ${hostname}"
+      priority: critical
+      description: |
+        Ransomware detected and contained:
+        
+        Host: ${hostname}
+        Variant: ${ransomware_family}
+        Encrypted Files: ${encrypted_file_count}
+        C2 Server: ${c2_ip_address}
+        
+        Automated Actions Taken:
+        - Host isolated from network
+        - C2 server blocked at firewall
+        - Forensic evidence collected
+        - Ransomware binary quarantined
+        
+        IMMEDIATE ACTIONS REQUIRED:
+        1. Verify backup integrity
+        2. Assess blast radius (check for lateral movement)
+        3. Identify entry point (phishing, RDP, vulnerability)
+        4. Notify stakeholders per IR playbook
+        5. Consider law enforcement notification
+      tags: [ransomware, critical, automated_response]
+
+metadata:
+  author: Nexus-Sec
+  version: 1.0
+  last_updated: 2024-02-11
+  mitre_attack:
+    tactics: [TA0040]  # Impact
+    techniques: [T1486]  # Data Encrypted for Impact
+  notes: |
+    This playbook provides rapid automated response to ransomware detection.
+    
+    CRITICAL TIMING:
+    - First 5 minutes: Contain the threat (isolate, block)
+    - First 15 minutes: Evidence collection
+    - First 30 minutes: Full incident response team mobilized
+    
+    POST-CONTAINMENT MANUAL STEPS:
+    1. Threat hunting for additional infected hosts
+    2. Root cause analysis
+    3. Recovery planning
+    4. Stakeholder communications
+    5. Post-incident review

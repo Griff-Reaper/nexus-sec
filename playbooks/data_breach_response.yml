@@ -1,0 +1,106 @@
+name: data_breach_response
+description: Automated containment and investigation for suspected data exfiltration
+trigger:
+  event_type: data_exfiltration
+  severity: high
+
+actions:
+  # PHASE 1: ALERT & ASSESS
+  - type: send_alert
+    name: breach_notification
+    params:
+      severity: high
+      message: "Potential data breach detected - ${exfil_volume_mb}MB transferred to ${destination_ip}"
+      channels: [email, slack]
+  
+  # PHASE 2: IMMEDIATE CONTAINMENT
+  - type: block_ip
+    name: block_exfil_destination
+    params:
+      ip: ${destination_ip}
+      duration: 86400  # 24 hours
+    notes: "Block data exfiltration destination"
+  
+  - type: isolate_host
+    name: isolate_source_system
+    params:
+      hostname: ${source_hostname}
+    condition: "severity >= 8"
+    notes: "Only isolate for high-severity incidents"
+  
+  # PHASE 3: EVIDENCE PRESERVATION
+  - type: collect_evidence
+    name: collect_network_forensics
+    params:
+      hostname: ${source_hostname}
+      artifacts: [network_connections, firewall_logs, proxy_logs, dns_logs]
+    continue_on_failure: true
+    notes: "Capture network evidence"
+  
+  - type: collect_evidence
+    name: collect_file_evidence
+    params:
+      hostname: ${source_hostname}
+      artifacts: [recent_file_access, usb_history, cloud_sync_logs]
+    continue_on_failure: true
+    notes: "Identify what data was accessed"
+  
+  # PHASE 4: INCIDENT DOCUMENTATION
+  - type: create_ticket
+    name: create_breach_investigation
+    params:
+      title: "Data Breach Investigation - ${source_hostname}"
+      priority: high
+      description: |
+        Suspected data exfiltration detected:
+        
+        Source System: ${source_hostname}
+        User Account: ${user_account}
+        Destination: ${destination_ip} (${destination_country})
+        Volume: ${exfil_volume_mb} MB
+        Protocol: ${transfer_protocol}
+        Timestamp: ${timestamp}
+        
+        Automated Actions:
+        - Destination IP blocked
+        - Source system isolated (if severity >= 8)
+        - Network forensics collected
+        - File access logs captured
+        
+        INVESTIGATION PRIORITIES:
+        1. Identify sensitive data accessed
+        2. Determine exfiltration method
+        3. Assess user account compromise
+        4. Check for insider threat indicators
+        5. Evaluate breach notification requirements
+        
+        COMPLIANCE CONSIDERATIONS:
+        - GDPR notification (72 hours)
+        - CCPA notification requirements
+        - Industry-specific regulations (HIPAA, PCI-DSS)
+      tags: [data_breach, exfiltration, compliance]
+
+metadata:
+  author: Nexus-Sec
+  version: 1.0
+  last_updated: 2024-02-11
+  mitre_attack:
+    tactics: [TA0010]  # Exfiltration
+    techniques: [T1041, T1567]  # Exfiltration Over C2, To Cloud Storage
+  compliance:
+    - GDPR Article 33 (breach notification)
+    - CCPA Section 1798.82
+    - HIPAA Breach Notification Rule
+  notes: |
+    Data breach response requires both technical containment and
+    compliance considerations.
+    
+    LEGAL CONSIDERATIONS:
+    - Preserve evidence chain of custody
+    - Document all response actions
+    - Coordinate with legal team before external communications
+    - Consider law enforcement notification
+    
+    COMMUNICATION PLAN:
+    - Internal: CISO, Legal, PR, Business Units
+    - External: Regulators, customers, partners (as required)

@@ -1,0 +1,113 @@
+name: phishing_response
+description: Automated response to phishing email detection and credential compromise
+trigger:
+  event_type: phishing_detected
+  severity: medium
+
+actions:
+  # PHASE 1: USER NOTIFICATION
+  - type: send_alert
+    name: alert_affected_user
+    params:
+      severity: medium
+      message: "Phishing email detected in your inbox - DO NOT CLICK LINKS"
+      channels: [email]
+      recipients: [${victim_email}]
+  
+  # PHASE 2: THREAT CONTAINMENT
+  - type: block_ip
+    name: block_phishing_server
+    params:
+      ip: ${phishing_ip}
+      duration: 604800  # 7 days
+    condition: "phishing_ip is not None"
+    notes: "Block phishing infrastructure"
+  
+  # PHASE 3: CREDENTIAL COMPROMISE CHECK
+  - type: collect_evidence
+    name: check_credential_usage
+    params:
+      hostname: ${victim_hostname}
+      artifacts: [authentication_logs, browser_history, saved_passwords]
+    condition: "credential_entered == True"
+    notes: "Determine if credentials were compromised"
+  
+  # PHASE 4: ACCOUNT PROTECTION
+  # Note: This would require custom action in production
+  - type: send_alert
+    name: force_password_reset
+    params:
+      severity: high
+      message: "Password reset required for ${victim_email} - potential credential compromise"
+      channels: [slack]
+      recipients: [identity_team]
+    condition: "credential_entered == True"
+  
+  # PHASE 5: HUNT FOR SIMILAR EMAILS
+  # Note: This would trigger threat hunting in production
+  - type: create_ticket
+    name: hunt_for_campaign
+    params:
+      title: "Phishing Campaign Hunt - ${sender_domain}"
+      priority: medium
+      description: |
+        Phishing email detected - hunt for campaign:
+        
+        Victim: ${victim_email}
+        Sender: ${sender_email}
+        Domain: ${sender_domain}
+        Subject: ${email_subject}
+        Malicious URL: ${phishing_url}
+        IP: ${phishing_ip}
+        
+        HUNT ACTIONS NEEDED:
+        1. Search email logs for similar senders
+        2. Check if other users received same email
+        3. Identify if any other users clicked link
+        4. Block sender domain if not legitimate
+        5. Update email security rules
+        
+        INDICATORS:
+        - Sender domain: ${sender_domain}
+        - Phishing URL pattern: ${url_pattern}
+        - Email subject keywords: ${subject_keywords}
+      tags: [phishing, email_security, threat_hunt]
+  
+  # PHASE 6: SECURITY AWARENESS
+  - type: send_alert
+    name: report_to_security_awareness
+    params:
+      severity: info
+      message: "Phishing attempt targeting ${victim_department} - consider awareness training"
+      channels: [email]
+      recipients: [security_awareness_team]
+
+metadata:
+  author: Nexus-Sec
+  version: 1.0
+  last_updated: 2024-02-11
+  mitre_attack:
+    tactics: [TA0001, TA0006]  # Initial Access, Credential Access
+    techniques: [T1566.002, T1078]  # Phishing: Spearphishing Link, Valid Accounts
+  notes: |
+    Phishing is the #1 initial access vector for breaches.
+    
+    RESPONSE PRIORITY LEVELS:
+    - Low: Caught by email filter, user didn't click
+    - Medium: User received email, clicked but no credential entry
+    - High: User entered credentials on phishing site
+    - Critical: Credentials entered + evidence of account usage
+    
+    FOLLOW-UP ACTIONS:
+    1. Review email security rules effectiveness
+    2. Analyze why email bypassed filters
+    3. Track campaign across organization
+    4. Coordinate with email provider for takedown
+    5. Security awareness training for affected users
+    
+    METRICS TO TRACK:
+    - Time to detection
+    - Time to user notification
+    - Number of users affected in campaign
+    - Credential compromise rate
+    - Takedown time for phishing infrastructure

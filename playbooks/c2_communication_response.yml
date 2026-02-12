@@ -1,0 +1,54 @@
+name: c2_communication_response
+description: Response to detected command and control communication
+trigger:
+  event_type: c2_detected
+  severity: critical
+
+actions:
+  - type: send_alert
+    name: critical_alert
+    params:
+      severity: critical
+      message: "C2 communication detected - immediate action required"
+      channels:
+        - email
+        - slack
+        - pagerduty
+    
+  - type: block_ip
+    name: block_c2_server
+    params:
+      ip: ${ip_address}
+      duration: 86400  # 24 hours
+    
+  - type: isolate_host
+    name: isolate_compromised_host
+    params:
+      hostname: ${hostname}
+    
+  - type: collect_evidence
+    name: forensic_collection
+    params:
+      hostname: ${hostname}
+      artifacts:
+        - memory
+        - disk
+        - network
+        - processes
+        - registry
+    
+  - type: create_ticket
+    name: create_high_priority_incident
+    params:
+      title: "C2 Communication Detected - ${hostname}"
+      description: "Host ${hostname} communicating with suspected C2 server ${ip_address}"
+      priority: critical
+
+metadata:
+  author: Nexus-Sec
+  version: 1.0
+  tags:
+    - c2
+    - network
+    - critical
+    - automated_response

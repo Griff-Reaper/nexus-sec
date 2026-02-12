@@ -1,0 +1,46 @@
+name: suspicious_login_response
+description: Response to suspicious authentication activity
+trigger:
+  event_type: suspicious_login
+  severity: medium
+
+actions:
+  - type: send_alert
+    name: notify_security_team
+    params:
+      severity: medium
+      message: "Suspicious login detected from unusual location"
+      channels:
+        - email
+        - slack
+    
+  - type: block_ip
+    name: block_suspicious_ip
+    params:
+      ip: ${source_ip}
+      duration: 3600  # 1 hour temporary block
+    condition: "failed_attempts > 5"
+    
+  - type: collect_evidence
+    name: collect_auth_logs
+    params:
+      hostname: ${target_host}
+      artifacts:
+        - auth_logs
+        - network
+    continue_on_failure: true
+    
+  - type: create_ticket
+    name: create_investigation_ticket
+    params:
+      title: "Suspicious Login - ${username} from ${source_ip}"
+      description: "User ${username} attempted login from ${source_ip} (${country})"
+      priority: medium
+
+metadata:
+  author: Nexus-Sec
+  version: 1.0
+  tags:
+    - authentication
+    - identity
+    - access_control
