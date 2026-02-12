@@ -1,23 +1,72 @@
-# Nexus-Sec Requirements (Updated with new features)
+# Nexus-Sec Requirements
+# AI-Powered Security Operations Platform
+# Python 3.11+ required
 
-# Core dependencies
-anthropic>=0.30.0
-python-dotenv>=1.0.0
+# ============================================
+# CORE DEPENDENCIES
+# ============================================
+
+# YAML parsing for playbooks
+PyYAML>=6.0.1
+
+# HTTP requests for API integrations
 requests>=2.31.0
 
-# SIEM Integration
-pyyaml>=6.0.1
+# Optional: Anthropic SDK for AI agents
+# anthropic>=0.30.0
 
-# Data processing (if you need it for other features)
-pandas>=2.0.0
-numpy>=1.24.0
+# ============================================
+# SIEM INTEGRATIONS
+# ============================================
 
-# Optional: Logging
-python-json-logger>=2.0.7
+# Elasticsearch integration (optional)
+# elasticsearch>=8.10.0
 
-# Testing
+# Splunk SDK (optional)
+# splunk-sdk>=1.7.0
+
+# ============================================
+# DEVELOPMENT & TESTING
+# ============================================
+
+# Testing framework
 pytest>=7.4.0
+pytest-cov>=4.1.0
 
-# Optional: Production SIEM clients
-# elasticsearch>=8.0.0  # For Elasticsearch integration
-# splunk-sdk>=1.7.0     # For Splunk integration
+# Code quality
+pylint>=3.0.0
+black>=23.10.0
+mypy>=1.6.0
+
+# ============================================
+# OPTIONAL: ENHANCED FEATURES
+# ============================================
+
+# Advanced threat intelligence
+# requests-cache>=1.1.0
+# python-whois>=0.8.0
+
+# Data processing
+# pandas>=2.1.0
+# numpy>=1.26.0
+
+# ============================================
+# INSTALLATION NOTES
+# ============================================
+#
+# BASIC INSTALL (minimum to run):
+#   pip install PyYAML requests
+#
+# FULL INSTALL (all features):
+#   pip install -r requirements.txt
+#
+# DEVELOPMENT INSTALL (includes testing):
+#   pip install -r requirements.txt
+#
+# AI AGENT FEATURES:
+#   Uncomment anthropic>=0.30.0 above
+#   Set ANTHROPIC_API_KEY in .env file
+#
+# SIEM INTEGRATIONS:
+#   Uncomment elasticsearch or splunk-sdk as needed
+#   Configure credentials in .env file

@@ -1,0 +1,11 @@
+# Nexus-Sec - Minimal Requirements
+# For quick start / basic functionality
+
+# Playbook YAML parsing
+PyYAML>=6.0.1
+
+# API/HTTP requests
+requests>=2.31.0
+
+# Testing
+pytest>=7.4.0
