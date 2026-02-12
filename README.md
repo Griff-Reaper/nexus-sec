@@ -620,9 +620,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Jace** - System Administrator & AI Security Engineer
 
-- LinkedIn: [Your LinkedIn]
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Portfolio: [your-portfolio.com](https://your-portfolio.com)
+- LinkedIn: [www.linkedin.com/in/jace-griffith-jg11]
+- GitHub: [@Griff-Reaper](https://github.com/Griff-Reaper)
+- Portfolio: [griff-reaper.github.io/Sinister-Security.github.io](https://griff-reaper.github.io/Sinister-Security.github.io/)
 
 *Built for modern SOC teams. Powered by AI. Driven by automation.*
 
