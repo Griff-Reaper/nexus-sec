@@ -58,6 +58,44 @@ class ThreatEvent(BaseModel):
     details: str
     timestamp: str
 
+class HoneypotIngest(BaseModel):
+    source: str
+    session_id: str
+    threat_score: int
+    threat_level: str
+    techniques: list[str] = []
+    mitre_tags: list[str] = []
+    sophistication: str = "unknown"
+    objectives: list[str] = []
+    summary: str = ""
+    honeytokens: list[dict] = []
+    correlation: dict = {}
+    message_count: int = 0
+    conversation: list[dict] = []
+
+class RedTeamIngest(BaseModel):
+    source: str = "red-team"
+    session_id: str
+    technique_id: str
+    technique_name: str
+    severity: str
+    target: str
+    attack_prompt: str
+    response: str
+    impact_score: int
+    success: bool
+    timestamp: str
+
+class FirewallIngest(BaseModel):
+    source: str = "prompt-firewall"
+    session_id: str
+    original_prompt: str
+    action: str
+    threat_score: float
+    threat_level: str
+    sanitized_prompt: Optional[str] = None
+    timestamp: str
+
 
 # ─────────────────────────────────────────────
 # HELPERS
@@ -190,6 +228,92 @@ async def query(request: QueryRequest):
     await broadcast(event)
 
     return event
+
+
+# ─────────────────────────────────────────────
+# INGEST ENDPOINTS
+# ─────────────────────────────────────────────
+
+@app.post("/honeypot/ingest")
+async def ingest_honeypot(payload: HoneypotIngest):
+    query = (
+        f"Analyze ARIA honeypot session. Threat score: {payload.threat_score} "
+        f"({payload.threat_level}). Techniques: {', '.join(payload.techniques) or 'none'}. "
+        f"MITRE: {', '.join(payload.mitre_tags) or 'none'}. "
+        f"Sophistication: {payload.sophistication}. Summary: {payload.summary}"
+    )
+    result = orchestrator.process_request(query) if orchestrator else {"response": "Orchestrator offline"}
+
+    event = {
+        "type": "honeypot_ingest",
+        "source": payload.source,
+        "session_id": payload.session_id,
+        "threat_score": payload.threat_score,
+        "threat_level": payload.threat_level,
+        "techniques": payload.techniques,
+        "mitre_tags": payload.mitre_tags,
+        "nexus_analysis": result.get("response", ""),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    threat_log.append(event)
+    if len(threat_log) > 100:
+        threat_log.pop(0)
+    await broadcast(event)
+    return {"status": "ingested", "session_id": payload.session_id, "nexus_analysis": result.get("response", "")}
+
+
+@app.post("/redteam/ingest")
+async def ingest_redteam(payload: RedTeamIngest):
+    query = (
+        f"Red team result: {payload.technique_id} ({payload.technique_name}), "
+        f"severity {payload.severity}, impact {payload.impact_score}/100. "
+        f"{'Succeeded' if payload.success else 'Blocked'}. Target: {payload.target}. "
+        f"Prompt: {payload.attack_prompt[:200]}"
+    )
+    result = orchestrator.process_request(query) if orchestrator else {"response": "Orchestrator offline"}
+
+    event = {
+        "type": "redteam_ingest",
+        "source": payload.source,
+        "session_id": payload.session_id,
+        "technique_id": payload.technique_id,
+        "severity": payload.severity,
+        "impact_score": payload.impact_score,
+        "success": payload.success,
+        "nexus_analysis": result.get("response", ""),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    threat_log.append(event)
+    if len(threat_log) > 100:
+        threat_log.pop(0)
+    await broadcast(event)
+    return {"status": "ingested", "session_id": payload.session_id}
+
+
+@app.post("/firewall/ingest")
+async def ingest_firewall(payload: FirewallIngest):
+    query = (
+        f"Prompt firewall event: action={payload.action}, "
+        f"threat_score={payload.threat_score}, level={payload.threat_level}. "
+        f"Prompt: {payload.original_prompt[:200]}"
+    )
+    result = orchestrator.process_request(query) if orchestrator else {"response": "Orchestrator offline"}
+
+    event = {
+        "type": "firewall_ingest",
+        "source": payload.source,
+        "session_id": payload.session_id,
+        "action": payload.action,
+        "threat_score": payload.threat_score,
+        "threat_level": payload.threat_level,
+        "nexus_analysis": result.get("response", ""),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    threat_log.append(event)
+    if len(threat_log) > 100:
+        threat_log.pop(0)
+    await broadcast(event)
+    return {"status": "ingested", "session_id": payload.session_id}
 
 
 # ─────────────────────────────────────────────
