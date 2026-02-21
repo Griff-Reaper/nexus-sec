@@ -451,7 +451,7 @@ async def threats_view():
         }
 
         load();
-        setInterval(load, 5000);
+        setInterval(load, 60000);
     </script>
 </body>
 </html>
