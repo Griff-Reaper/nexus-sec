@@ -429,7 +429,11 @@ async def threats_view():
         }
 
         load();
-        setInterval(load, 5000); // auto-refresh every 5s
+        setInterval(() => {
+            if (window.scrollY < 10) {
+            load();
+        }
+    }, 5000);
     </script>
 </body>
 </html>
