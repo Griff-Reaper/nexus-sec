@@ -416,26 +416,28 @@ async def threats_view():
         }
 
         async function load() {
-            const scrollY = window.scrollY;
-            const resp = await fetch('/threats/log');
-            const data = await resp.json();
-            const events = (data.events || []).reverse();
-            document.getElementById('count').textContent = `${events.length} events`;
-            const container = document.getElementById('events');
-            if (!events.length) {
-                container.innerHTML = '<div class="empty">No threat events yet. Run an attack to see data here.</div>';
-                return;
+            try {
+                const scrollY = window.scrollY;
+                const resp = await fetch('/threats/log');
+                const data = await resp.json();
+                const events = (data.events || []).reverse();
+                document.getElementById('count').textContent = `${events.length} events`;
+                const container = document.getElementById('events');
+                if (!events.length) {
+                    container.innerHTML = '<div class="empty">No threat events yet. Run an attack to see data here.</div>';
+                    return;
+                }
+                container.innerHTML = events.map(render).join('');
+                window.scrollTo(0, scrollY);
+            } catch(e) {
+                console.error('Failed to load events', e);
             }
-            container.innerHTML = events.map(render).join('');
-            const scrollY = window.scrollY;
         }
 
         load();
         setInterval(() => {
-            if (window.scrollY < 10) {
-            load();
-        }
-    }, 5000);
+            if (window.scrollY < 10) load();
+        }, 5000);
     </script>
 </body>
 </html>
