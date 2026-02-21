@@ -315,6 +315,125 @@ async def ingest_firewall(payload: FirewallIngest):
     await broadcast(event)
     return {"status": "ingested", "session_id": payload.session_id}
 
+from fastapi.responses import HTMLResponse
+
+@app.get("/threats/view", response_class=HTMLResponse)
+async def threats_view():
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus-Sec Threat Log</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0e1a; color: #c9d1d9; font-family: 'Courier New', monospace; padding: 20px; }
+        h1 { color: #00ffcc; font-size: 1.4rem; margin-bottom: 6px; letter-spacing: 2px; }
+        .subtitle { color: #555; font-size: 0.75rem; margin-bottom: 20px; }
+        .event { background: #0d1117; border: 1px solid #1e2a3a; border-left: 3px solid #00ffcc; 
+                 border-radius: 4px; padding: 14px; margin-bottom: 12px; }
+        .event.redteam { border-left-color: #ff4444; }
+        .event.firewall { border-left-color: #f0a500; }
+        .event.honeypot { border-left-color: #00ffcc; }
+        .event-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 3px; font-weight: bold; }
+        .badge.redteam { background: #ff444422; color: #ff4444; border: 1px solid #ff444444; }
+        .badge.firewall { background: #f0a50022; color: #f0a500; border: 1px solid #f0a50044; }
+        .badge.honeypot { background: #00ffcc22; color: #00ffcc; border: 1px solid #00ffcc44; }
+        .timestamp { color: #555; font-size: 0.72rem; }
+        .field { margin: 4px 0; font-size: 0.82rem; }
+        .label { color: #666; }
+        .value { color: #e6edf3; }
+        .value.success { color: #ff4444; }
+        .value.blocked { color: #00ffcc; }
+        .analysis { margin-top: 10px; padding: 10px; background: #0a0e1a; 
+                    border-radius: 3px; font-size: 0.78rem; color: #8b949e; 
+                    white-space: pre-wrap; line-height: 1.5; max-height: 200px; overflow-y: auto; }
+        .threat-bar { height: 4px; background: #1e2a3a; border-radius: 2px; margin: 8px 0; }
+        .threat-fill { height: 100%; border-radius: 2px; background: #00ffcc; }
+        .empty { text-align: center; color: #333; padding: 60px; font-size: 0.9rem; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .count { color: #555; font-size: 0.8rem; }
+        .refresh { color: #00ffcc; font-size: 0.75rem; cursor: pointer; background: none; 
+                   border: 1px solid #00ffcc33; padding: 4px 10px; border-radius: 3px; }
+        .refresh:hover { background: #00ffcc11; }
+    </style>
+</head>
+<body>
+    <div class="header-row">
+        <div>
+            <h1>⬡ NEXUS-SEC // THREAT LOG</h1>
+            <div class="subtitle">Live feed from all connected sources</div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <span class="count" id="count"></span>
+            <button class="refresh" onclick="load()">↻ Refresh</button>
+        </div>
+    </div>
+    <div id="events"></div>
+
+    <script>
+        function severity_color(score) {
+            if (score >= 80) return '#ff4444';
+            if (score >= 60) return '#ff8800';
+            if (score >= 35) return '#f0a500';
+            return '#00ffcc';
+        }
+
+        function clean(text) {
+            return (text || '').replace(/\*\*/g, '').replace(/##/g, '').trim();
+        }
+
+        function render(event) {
+            const type = event.type || '';
+            const typeClass = type.includes('redteam') ? 'redteam' : type.includes('firewall') ? 'firewall' : 'honeypot';
+            const typeLabel = type.includes('redteam') ? 'RED TEAM' : type.includes('firewall') ? 'FIREWALL' : 'HONEYPOT';
+            const score = event.threat_score || event.impact_score || 0;
+            const ts = new Date(event.timestamp).toLocaleString();
+            const analysis = clean(event.nexus_analysis || '');
+
+            let fields = '';
+            if (event.technique_id) fields += `<div class="field"><span class="label">technique: </span><span class="value">${event.technique_id} — ${event.technique_name || ''}</span></div>`;
+            if (event.severity) fields += `<div class="field"><span class="label">severity: </span><span class="value">${event.severity}</span></div>`;
+            if (event.target) fields += `<div class="field"><span class="label">target: </span><span class="value">${event.target}</span></div>`;
+            if (event.success !== undefined) fields += `<div class="field"><span class="label">result: </span><span class="value ${event.success ? 'success' : 'blocked'}">${event.success ? '⚡ SUCCEEDED' : '✓ BLOCKED'}</span></div>`;
+            if (event.action) fields += `<div class="field"><span class="label">action: </span><span class="value">${event.action.toUpperCase()}</span></div>`;
+            if (event.techniques?.length) fields += `<div class="field"><span class="label">techniques: </span><span class="value">${event.techniques.join(', ')}</span></div>`;
+            if (event.mitre_tags?.length) fields += `<div class="field"><span class="label">mitre: </span><span class="value">${event.mitre_tags.join(', ')}</span></div>`;
+
+            return `
+            <div class="event ${typeClass}">
+                <div class="event-header">
+                    <span class="badge ${typeClass}">${typeLabel}</span>
+                    <span class="timestamp">${ts}</span>
+                </div>
+                <div class="field"><span class="label">session: </span><span class="value">${event.session_id || 'N/A'}</span></div>
+                ${fields}
+                <div class="field"><span class="label">threat score: </span><span class="value">${score}</span></div>
+                <div class="threat-bar"><div class="threat-fill" style="width:${Math.min(score,100)}%; background:${severity_color(score)}"></div></div>
+                ${analysis ? `<div class="analysis">${analysis}</div>` : ''}
+            </div>`;
+        }
+
+        async function load() {
+            const resp = await fetch('/threats/log');
+            const data = await resp.json();
+            const events = (data.events || []).reverse();
+            document.getElementById('count').textContent = `${events.length} events`;
+            const container = document.getElementById('events');
+            if (!events.length) {
+                container.innerHTML = '<div class="empty">No threat events yet. Run an attack to see data here.</div>';
+                return;
+            }
+            container.innerHTML = events.map(render).join('');
+        }
+
+        load();
+        setInterval(load, 5000); // auto-refresh every 5s
+    </script>
+</body>
+</html>
+"""
 
 # ─────────────────────────────────────────────
 # WEBSOCKET — Live Threat Feed
