@@ -416,6 +416,7 @@ async def threats_view():
         }
 
         async function load() {
+            const scrollY = window.scrollY;
             const resp = await fetch('/threats/log');
             const data = await resp.json();
             const events = (data.events || []).reverse();
@@ -426,6 +427,7 @@ async def threats_view():
                 return;
             }
             container.innerHTML = events.map(render).join('');
+            const scrollY = window.scrollY;
         }
 
         load();
